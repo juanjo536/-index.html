@@ -1,0 +1,1295 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Coordinadora — Sistema de Solicitudes RR.HH.</title>
+
+<!-- ============================================================
+  FUENTES
+  Cambia las fuentes aquí. Busca en fonts.google.com
+  Fuente principal (textos): DM Mono
+  Fuente títulos: Syne
+============================================================ -->
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+
+/* ============================================================
+  SECCIÓN 1 — COLORES Y VARIABLES GLOBALES
+  Edita aquí para cambiar toda la paleta de colores del sistema
+============================================================ */
+:root {
+  /* Fondos */
+  --bg:        #0f1923;   /* fondo principal */
+  --surface:   #162030;   /* fondo sidebar y cards secundarias */
+  --surface2:  #1e2d40;   /* hover en navegación */
+  --card:      #192535;   /* fondo de tarjetas */
+
+  /* Bordes */
+  --border:    #2a3f57;
+
+  /* Colores de acción */
+  --accent:     #00d4aa;              /* color principal (verde-teal) */
+  --accent-dim: rgba(0,212,170,0.12); /* versión transparente del acento */
+  --accent2:    #ff6b35;              /* acento secundario (naranja) */
+
+  /* Estados */
+  --warn:   #f7c948;  /* amarillo — pendiente */
+  --danger: #e63946;  /* rojo — rechazado / error */
+
+  /* Textos */
+  --text:       #e8f4f8;  /* texto principal */
+  --text-muted: #6a8fa8;  /* texto secundario */
+  --text-dim:   #3d5a72;  /* texto muy tenue */
+
+  /* Otros */
+  --radius: 8px;  /* bordes redondeados */
+}
+
+
+/* ============================================================
+  SECCIÓN 2 — ESTILOS BASE (reset y tipografía)
+  No suele necesitar cambios
+============================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 14px; }
+body {
+  font-family: 'DM Mono', monospace;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+
+/* Pantallas principales */
+.screen { display: none; min-height: 100vh; }
+.screen.active { display: flex; }
+
+/* Animaciones */
+@keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+@keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+
+
+/* ============================================================
+  SECCIÓN 3 — PANTALLA DE LOGIN
+  Edita el estilo de la tarjeta de acceso
+============================================================ */
+#screen-login {
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Círculos decorativos del fondo */
+#screen-login::before {
+  content: '';
+  position: absolute; top: -200px; right: -200px;
+  width: 600px; height: 600px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(0,212,170,0.06) 0%, transparent 70%);
+  pointer-events: none;
+}
+#screen-login::after {
+  content: '';
+  position: absolute; bottom: -150px; left: -150px;
+  width: 400px; height: 400px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,107,53,0.05) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* Caja principal del login */
+.login-box {
+  width: 100%; max-width: 420px;
+  padding: 2.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  position: relative; z-index: 1;
+  animation: fadeUp 0.5s ease both;
+}
+
+/* Logo dentro del login */
+.login-logo { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 2rem; }
+.login-logo .logo-mark {
+  width: 40px; height: 40px;
+  background: var(--accent);        /* color del cuadro del logo */
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Syne', sans-serif;
+  font-weight: 800; font-size: 1.1rem;
+  color: var(--bg);
+}
+.login-logo .logo-text { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1.1rem; line-height: 1.2; }
+.login-logo .logo-text span { display: block; font-size: 10px; font-weight: 400; color: var(--text-muted); letter-spacing: 0.1em; }
+
+.login-title { font-family: 'Syne', sans-serif; font-size: 1.6rem; font-weight: 800; margin-bottom: 0.25rem; }
+.login-sub   { color: var(--text-muted); font-size: 12px; margin-bottom: 2rem; }
+
+/* Tarjetas de selección de usuario */
+.user-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1.5rem; }
+.user-card {
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.85rem; cursor: pointer;
+  transition: all 0.2s; text-align: center;
+}
+.user-card:hover    { border-color: var(--accent); background: var(--accent-dim); }
+.user-card.selected { border-color: var(--accent); background: var(--accent-dim); }
+.user-card .uc-icon { font-size: 1.5rem; margin-bottom: 0.3rem; }
+.user-card .uc-name { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.85rem; }
+.user-card .uc-role { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+
+
+/* ============================================================
+  SECCIÓN 4 — COMPONENTES REUTILIZABLES (botones, inputs, badges)
+============================================================ */
+
+/* — Botones — */
+.btn {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  padding: 0.7rem 1.4rem; border: none; border-radius: var(--radius);
+  font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 500;
+  letter-spacing: 0.05em; cursor: pointer; transition: all 0.18s;
+  text-transform: uppercase;
+}
+.btn-primary   { background: var(--accent); color: var(--bg); }
+.btn-primary:hover { background: #00f0c0; transform: translateY(-1px); }
+.btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+.btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+.btn-danger    { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
+.btn-danger:hover  { background: rgba(230,57,70,0.1); }
+.btn-warn      { background: transparent; color: var(--warn); border: 1px solid var(--warn); }
+.btn-warn:hover    { background: rgba(247,201,72,0.1); }
+.btn-full { width: 100%; justify-content: center; }
+.btn-sm   { padding: 0.4rem 0.8rem; font-size: 11px; }
+
+/* — Campos de formulario — */
+.form-group { margin-bottom: 1.25rem; }
+.form-group label {
+  display: block; font-size: 11px; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.4rem;
+}
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%; background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius); color: var(--text);
+  font-family: 'DM Mono', monospace; font-size: 13px;
+  padding: 0.7rem 0.9rem; transition: border-color 0.2s; outline: none;
+}
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+.form-group textarea { resize: vertical; min-height: 100px; }
+.form-group select option { background: var(--surface); }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+@media(max-width:600px){ .form-grid { grid-template-columns: 1fr; } }
+
+/* — Badges de estado — */
+.badge {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  font-size: 10px; letter-spacing: 0.05em; text-transform: uppercase;
+  padding: 3px 10px; border-radius: 20px; font-weight: 600; white-space: nowrap;
+}
+.badge::before { content: ''; width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+
+/* Colores de cada estado — edita aquí si quieres cambiarlos */
+.badge-pendiente { background: rgba(247,201,72,0.12);  color: var(--warn);   border: 1px solid rgba(247,201,72,0.3); }
+.badge-pendiente::before { background: var(--warn); }
+.badge-revision  { background: rgba(69,123,157,0.15);  color: #7ec8e3;       border: 1px solid rgba(69,123,157,0.3); }
+.badge-revision::before  { background: #7ec8e3; }
+.badge-aprobada  { background: rgba(0,212,170,0.12);   color: var(--accent); border: 1px solid rgba(0,212,170,0.3); }
+.badge-aprobada::before  { background: var(--accent); }
+.badge-rechazada { background: rgba(230,57,70,0.12);   color: var(--danger); border: 1px solid rgba(230,57,70,0.3); }
+.badge-rechazada::before { background: var(--danger); }
+
+/* — Borde izquierdo por prioridad — */
+.priority-alta  { border-left: 3px solid var(--danger) !important; }
+.priority-media { border-left: 3px solid var(--warn)   !important; }
+.priority-baja  { border-left: 3px solid var(--text-dim) !important; }
+
+/* — Mensajes de error — */
+.error-msg { color: var(--danger); font-size: 12px; margin-top: 0.5rem; display: none; }
+.error-msg.show { display: block; }
+
+/* — Barra de búsqueda y filtros — */
+.toolbar { display: flex; gap: 0.75rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+.search-input {
+  flex: 1; min-width: 200px; background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); color: var(--text); font-family: 'DM Mono', monospace;
+  font-size: 12px; padding: 0.6rem 0.9rem; outline: none; transition: border-color 0.2s;
+}
+.search-input:focus { border-color: var(--accent); }
+.filter-select {
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+  color: var(--text); font-family: 'DM Mono', monospace; font-size: 12px;
+  padding: 0.6rem 0.9rem; outline: none; cursor: pointer;
+}
+.filter-select option { background: var(--surface); }
+
+/* — Estado vacío (sin resultados) — */
+.empty-state { text-align: center; padding: 4rem 2rem; color: var(--text-muted); }
+.empty-state .es-icon { font-size: 3rem; margin-bottom: 1rem; opacity: 0.4; }
+.empty-state p { font-size: 13px; }
+
+
+/* ============================================================
+  SECCIÓN 5 — ESTRUCTURA DEL APP (sidebar + área principal)
+============================================================ */
+#screen-app { flex-direction: column; }
+.app-shell {
+  display: grid;
+  grid-template-columns: 240px 1fr;  /* ancho del sidebar | área de contenido */
+  min-height: 100vh;
+}
+
+/* — Sidebar (menú lateral) — */
+.sidebar {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  position: sticky; top: 0; height: 100vh; overflow-y: auto;
+}
+.sidebar-header { padding: 1.5rem 1.25rem; border-bottom: 1px solid var(--border); }
+.sidebar-logo { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.5rem; }
+.sidebar-logo .s-mark {
+  width: 32px; height: 32px; background: var(--accent); border-radius: 5px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Syne', sans-serif; font-weight: 800; font-size: 0.9rem; color: var(--bg);
+}
+.sidebar-logo .s-name { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.95rem; }
+
+/* Tarjeta del usuario conectado en el sidebar */
+.sidebar-user {
+  display: flex; align-items: center; gap: 0.6rem;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 0.5rem 0.75rem; margin-top: 0.75rem;
+}
+.sidebar-user .su-avatar {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--accent-dim); border: 1px solid var(--accent);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.8rem; flex-shrink: 0;
+}
+.sidebar-user .su-info { flex: 1; min-width: 0; }
+.sidebar-user .su-name { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sidebar-user .su-role { font-size: 10px; color: var(--text-muted); }
+
+/* Ítems del menú lateral */
+.sidebar-nav { padding: 1rem 0.75rem; flex: 1; }
+.nav-section-label {
+  font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--text-dim); padding: 0.5rem 0.5rem 0.25rem;
+}
+.nav-item {
+  display: flex; align-items: center; gap: 0.75rem;
+  padding: 0.6rem 0.75rem; border-radius: 6px;
+  cursor: pointer; transition: all 0.15s; color: var(--text-muted);
+  font-size: 12px; letter-spacing: 0.03em; margin-bottom: 2px;
+  position: relative; border: none; background: none; width: 100%; text-align: left;
+}
+.nav-item .nav-icon { font-size: 1rem; flex-shrink: 0; }
+.nav-item:hover  { background: var(--surface2); color: var(--text); }
+.nav-item.active { background: var(--accent-dim); color: var(--accent); border-left: 2px solid var(--accent); }
+.nav-badge {
+  margin-left: auto; background: var(--danger); color: white;
+  font-size: 9px; font-weight: 700; padding: 1px 6px; border-radius: 10px;
+  min-width: 18px; text-align: center;
+}
+.sidebar-footer { padding: 1rem 0.75rem; border-top: 1px solid var(--border); }
+
+/* Área de contenido principal */
+.main { flex: 1; overflow-y: auto; }
+.view { display: none; padding: 2rem; animation: fadeIn 0.3s ease; }
+.view.active { display: block; }
+.page-header { margin-bottom: 2rem; }
+.page-title { font-family: 'Syne', sans-serif; font-size: 1.6rem; font-weight: 800; }
+.page-sub   { color: var(--text-muted); font-size: 12px; margin-top: 0.25rem; }
+
+
+/* ============================================================
+  SECCIÓN 6 — TARJETAS DE ESTADÍSTICAS (dashboard)
+============================================================ */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1rem; margin-bottom: 2rem;
+}
+.stat-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 1.25rem; transition: border-color 0.2s;
+}
+.stat-card:hover { border-color: var(--accent); }
+.stat-label { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.5rem; }
+.stat-value { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 2rem; line-height: 1; }
+.stat-value.green  { color: var(--accent); }
+.stat-value.yellow { color: var(--warn); }
+.stat-value.red    { color: var(--danger); }
+.stat-delta { font-size: 11px; color: var(--text-muted); margin-top: 0.25rem; }
+
+
+/* ============================================================
+  SECCIÓN 7 — TARJETAS DE SOLICITUD (lista de solicitudes)
+============================================================ */
+.solicitudes-list { display: flex; flex-direction: column; gap: 0.75rem; }
+.sol-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 1.25rem;
+  display: grid; grid-template-columns: auto 1fr auto;
+  gap: 1rem; align-items: start;
+  transition: all 0.2s; cursor: pointer;
+}
+.sol-card:hover { border-color: var(--accent); transform: translateX(2px); }
+
+/* Ícono del tipo de solicitud */
+.sol-type-icon {
+  width: 40px; height: 40px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.2rem; flex-shrink: 0;
+}
+/* Colores de fondo por tipo — edita aquí para cambiarlos */
+.icon-vacaciones  { background: rgba(0,212,170,0.12); }
+.icon-permiso     { background: rgba(255,107,53,0.12); }
+.icon-certificado { background: rgba(247,201,72,0.12); }
+.icon-incapacidad { background: rgba(230,57,70,0.12);  }
+.icon-otro        { background: rgba(106,143,168,0.12); }
+
+.sol-body    { min-width: 0; }
+.sol-title   { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.9rem; margin-bottom: 0.25rem; }
+.sol-meta    { font-size: 11px; color: var(--text-muted); display: flex; gap: 1rem; flex-wrap: wrap; }
+.sol-desc    { font-size: 12px; color: var(--text-muted); margin-top: 0.5rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sol-actions { display: flex; flex-direction: column; gap: 0.4rem; align-items: flex-end; }
+
+/* Tarjeta de nueva solicitud */
+.form-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 2rem; max-width: 680px;
+}
+.form-card h3 { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1.1rem; margin-bottom: 1.5rem; }
+
+
+/* ============================================================
+  SECCIÓN 8 — NOTIFICACIONES
+============================================================ */
+.notif-item {
+  display: flex; gap: 1rem; padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border); transition: background 0.15s; cursor: pointer;
+}
+.notif-item:hover        { background: var(--surface2); }
+.notif-item.unread       { background: rgba(0,212,170,0.04); }
+.notif-item.unread .notif-title { color: var(--text); }
+.notif-dot      { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex-shrink: 0; margin-top: 5px; }
+.notif-dot.read { background: var(--border); }
+.notif-title    { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.85rem; color: var(--text-muted); }
+.notif-body     { font-size: 12px; color: var(--text-muted); margin-top: 2px; line-height: 1.5; }
+.notif-time     { font-size: 10px; color: var(--text-dim); margin-top: 4px; }
+
+
+/* ============================================================
+  SECCIÓN 9 — MODAL (ventana de detalle de solicitud)
+============================================================ */
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7); z-index: 1000;
+  align-items: center; justify-content: center; padding: 1rem;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); width: 100%; max-width: 560px;
+  max-height: 90vh; overflow-y: auto;
+  animation: fadeUp 0.3s ease;
+}
+.modal-header {
+  padding: 1.5rem; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.modal-header h3 { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1.1rem; }
+.modal-close { background: none; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer; }
+.modal-close:hover { color: var(--text); }
+.modal-body   { padding: 1.5rem; }
+.modal-footer { padding: 1rem 1.5rem; border-top: 1px solid var(--border); display: flex; gap: 0.75rem; justify-content: flex-end; }
+
+/* Filas de detalle dentro del modal */
+.detail-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 0.6rem 0; border-bottom: 1px solid var(--border); gap: 1rem; }
+.detail-row:last-child { border-bottom: none; }
+.detail-label { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); flex-shrink: 0; }
+.detail-value { font-size: 13px; text-align: right; }
+.detail-desc  { margin-top: 1rem; }
+.detail-desc .detail-label { margin-bottom: 0.5rem; display: block; }
+.detail-desc p { font-size: 13px; line-height: 1.7; background: var(--bg); padding: 0.75rem; border-radius: 6px; border: 1px solid var(--border); }
+
+/* Caja de respuesta de RR.HH. */
+.respuesta-box { margin-top: 1rem; background: rgba(0,212,170,0.06); border: 1px solid rgba(0,212,170,0.2); border-radius: 6px; padding: 1rem; }
+.respuesta-box .r-label { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.4rem; }
+.respuesta-box p { font-size: 13px; line-height: 1.6; }
+
+/* Sección de responder (solo RR.HH.) */
+.responder-section { margin-top: 1.5rem; border-top: 1px solid var(--border); padding-top: 1.5rem; }
+.responder-section h4 { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.95rem; margin-bottom: 1rem; }
+
+
+/* ============================================================
+  SECCIÓN 10 — TOAST (notificación emergente inferior)
+============================================================ */
+#toast {
+  position: fixed; bottom: 2rem; right: 2rem; z-index: 2000;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 0.85rem 1.25rem;
+  display: flex; align-items: center; gap: 0.75rem;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  transform: translateY(20px); opacity: 0;
+  transition: all 0.3s ease; pointer-events: none; max-width: 320px;
+}
+#toast.show { transform: translateY(0); opacity: 1; }
+#toast .toast-icon { font-size: 1.1rem; flex-shrink: 0; }
+#toast .toast-msg  { font-size: 12px; line-height: 1.4; }
+
+
+/* ============================================================
+  SECCIÓN 11 — RESPONSIVO MÓVIL
+  Ajustes para pantallas menores a 700px
+============================================================ */
+@media(max-width: 700px) {
+  .app-shell { grid-template-columns: 1fr; }
+  .sidebar { display: none; position: fixed; z-index: 100; width: 240px; height: 100vh; top: 0; left: -240px; transition: left 0.25s; }
+  .sidebar.open { display: flex; left: 0; }
+  .mobile-header { display: flex !important; }
+  .view { padding: 1rem; }
+}
+.mobile-header {
+  display: none; align-items: center; justify-content: space-between;
+  padding: 0.75rem 1rem; background: var(--surface); border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 50;
+}
+.mobile-menu-btn { background: none; border: none; color: var(--text); font-size: 1.2rem; cursor: pointer; }
+
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+  HTML 1 — PANTALLA DE LOGIN
+  Edita los nombres de los usuarios aquí (también en JS SECCIÓN 1)
+============================================================ -->
+<div id="screen-login" class="screen active">
+  <div class="login-box">
+
+    <!-- Logo y título del login -->
+    <div class="login-logo">
+      <div class="logo-mark">C</div>
+      <div class="logo-text">
+        sistema coordinador                           <!-- Nombre de la empresa -->
+        <span>Sistema de Solicitudes generales · RR.HH.</span>
+      </div>
+    </div>
+    <h2 class="login-title">Bienvenido</h2>
+    <p class="login-sub">Selecciona tu perfil para continuar</p>
+
+    <!-- Tarjetas de usuarios disponibles -->
+    <!-- Para agregar un usuario: copia un bloque <div class="user-card"> y agrega el mismo key en JS SECCIÓN 1 -->
+    <p style="font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-muted); margin-bottom:0.75rem;">Acceder como:</p>
+    <div class="user-cards" id="user-cards">
+
+      <div class="user-card selected" data-user="empleado1" onclick="selectUser(this)">
+        <div class="uc-icon">👤</div>
+        <div class="uc-name">Jose Ortega</div>
+        <div class="uc-role">Empleado de Logística</div>
+      </div>
+
+      <div class="user-card" data-user="empleado2" onclick="selectUser(this)">
+        <div class="uc-icon">👤</div>
+        <div class="uc-name">Zury Campos</div>
+        <div class="uc-role">Empleado Comercial</div>
+      </div>
+
+      <div class="user-card" data-user="empleado3" onclick="selectUser(this)">
+        <div class="uc-icon">👤</div>
+        <div class="uc-name">Juan Macias</div>
+        <div class="uc-role">Empleado de Operaciones</div>
+      </div>
+
+      <div class="user-card" data-user="rrhh" onclick="selectUser(this)">
+        <div class="uc-icon">🏢</div>
+        <div class="uc-name">RR.HH. Admin</div>
+        <div class="uc-role">Encargado · Recursos Humanos</div>
+      </div>
+
+    </div>
+
+    <!-- Campo de contraseña -->
+    <div class="form-group">
+      <label>Contraseña</label>
+      <input type="password" id="login-pass" placeholder="Ingresa tu contraseña" />
+      <div class="error-msg" id="login-error">Contraseña incorrecta. Usa: 1234</div>
+    </div>
+    <button class="btn btn-primary btn-full" onclick="doLogin()">Ingresar al sistema →</button>
+    <p style="font-size:11px; color:var(--text-dim); text-align:center; margin-top:1rem;">
+      Contraseña de demo: <strong style="color:var(--text-muted)">1234</strong>
+    </p>
+
+  </div>
+</div>
+
+
+<!-- ============================================================
+  HTML 2 — PANTALLA PRINCIPAL DE LA APP
+============================================================ -->
+<div id="screen-app" class="screen">
+
+  <!-- Barra superior en móvil -->
+  <div class="mobile-header">
+    <button class="mobile-menu-btn" onclick="toggleMobileSidebar()">☰</button>
+    <span style="font-family:'Syne',sans-serif;font-weight:700;font-size:0.9rem;">Coordinadora · RR.HH.</span>
+    <span id="mobile-notif-badge" style="display:none;background:var(--danger);color:#fff;font-size:10px;padding:2px 7px;border-radius:10px;"></span>
+  </div>
+
+  <div class="app-shell">
+
+    <!-- ── SIDEBAR ── -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">
+          <div class="s-mark">C</div>
+          <div class="s-name">Coordinadora</div>   <!-- Nombre en sidebar -->
+        </div>
+        <div class="sidebar-user">
+          <div class="su-avatar" id="sb-avatar">👤</div>
+          <div class="su-info">
+            <div class="su-name" id="sb-name">—</div>
+            <div class="su-role" id="sb-role">—</div>
+          </div>
+        </div>
+      </div>
+      <!-- El menú de navegación se genera dinámicamente en JS -->
+      <nav class="sidebar-nav" id="sidebar-nav"></nav>
+      <div class="sidebar-footer">
+        <button class="btn btn-secondary btn-full btn-sm" onclick="doLogout()">⏻ Cerrar sesión</button>
+      </div>
+    </aside>
+
+    <!-- ── ÁREA DE CONTENIDO ── -->
+    <main class="main" id="main">
+
+
+      <!-- ============================================================
+        HTML 3 — VISTAS DEL EMPLEADO
+      ============================================================ -->
+
+      <!-- Vista: Inicio del empleado -->
+      <div class="view active" id="view-inicio">
+        <div class="page-header">
+          <h1 class="page-title" id="welcome-title">Hola 👋</h1>
+          <p class="page-sub">Resumen de tus solicitudes</p>
+        </div>
+        <div class="stats-grid" id="emp-stats"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+          <h3 style="font-family:'Syne',sans-serif;font-weight:700;font-size:1rem;">Solicitudes Recientes</h3>
+          <button class="btn btn-secondary btn-sm" onclick="goTo('view-nueva')">+ Nueva solicitud</button>
+        </div>
+        <div id="emp-recientes"></div>
+      </div>
+
+      <!-- Vista: Formulario nueva solicitud -->
+      <div class="view" id="view-nueva">
+        <div class="page-header">
+          <h1 class="page-title">Nueva Solicitud</h1>
+          <p class="page-sub">Completa el formulario para enviar tu solicitud a RR.HH.</p>
+        </div>
+        <div class="form-card">
+          <h3>📋 Formulario de Solicitud</h3>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Tipo de Solicitud *</label>
+              <!-- Agrega o elimina opciones aquí. También actualiza TIPO_ICONS y TIPO_CLASS en JS SECCIÓN 2 -->
+              <select id="sol-tipo">
+                <option value="">Seleccionar tipo...</option>
+                <option value="Vacaciones">🌴 Vacaciones</option>
+                <option value="Permiso">📅 Permiso</option>
+                <option value="Certificado">📄 Certificado Laboral</option>
+                <option value="Incapacidad">🏥 Incapacidad</option>
+                <option value="Otro">📝 Otro</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Prioridad *</label>
+              <select id="sol-prioridad">
+                <option value="baja">🟢 Baja</option>
+                <option value="media" selected>🟡 Media</option>
+                <option value="alta">🔴 Alta</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Fecha de Inicio</label>
+              <input type="date" id="sol-fecha-inicio" />
+            </div>
+            <div class="form-group">
+              <label>Fecha de Fin</label>
+              <input type="date" id="sol-fecha-fin" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Asunto / Título *</label>
+            <input type="text" id="sol-asunto" placeholder="Ej: Solicitud de vacaciones julio-agosto" />
+          </div>
+          <div class="form-group">
+            <label>Descripción detallada *</label>
+            <textarea id="sol-desc" placeholder="Describe tu solicitud con el mayor detalle posible..."></textarea>
+          </div>
+          <div style="display:flex;gap:0.75rem;margin-top:0.5rem;">
+            <button class="btn btn-primary" onclick="enviarSolicitud()">📤 Enviar Solicitud</button>
+            <button class="btn btn-secondary" onclick="goTo('view-inicio')">Cancelar</button>
+          </div>
+          <p id="form-error" class="error-msg"></p>
+        </div>
+      </div>
+
+      <!-- Vista: Historial de solicitudes del empleado -->
+      <div class="view" id="view-mis-solicitudes">
+        <div class="page-header">
+          <h1 class="page-title">Mis Solicitudes</h1>
+          <p class="page-sub">Historial y estado de todas tus solicitudes</p>
+        </div>
+        <div class="toolbar">
+          <input class="search-input" placeholder="Buscar por asunto..." id="emp-search" oninput="renderMisSolicitudes()" />
+          <select class="filter-select" id="emp-filter" onchange="renderMisSolicitudes()">
+            <option value="">Todos los estados</option>
+            <option value="Pendiente">Pendiente</option>
+            <option value="En Revisión">En Revisión</option>
+            <option value="Aprobada">Aprobada</option>
+            <option value="Rechazada">Rechazada</option>
+          </select>
+        </div>
+        <div id="emp-solicitudes-list"></div>
+      </div>
+
+      <!-- Vista: Notificaciones del empleado -->
+      <div class="view" id="view-notificaciones-emp">
+        <div class="page-header">
+          <h1 class="page-title">Notificaciones</h1>
+          <p class="page-sub">Actualizaciones sobre el estado de tus solicitudes</p>
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-bottom:1rem;">
+          <button class="btn btn-secondary btn-sm" onclick="marcarTodasLeidas()">✓ Marcar todas como leídas</button>
+        </div>
+        <div id="emp-notificaciones" style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;"></div>
+      </div>
+
+
+      <!-- ============================================================
+        HTML 4 — VISTAS DEL PANEL RR.HH.
+      ============================================================ -->
+
+      <!-- Vista: Dashboard RR.HH. -->
+      <div class="view" id="view-rrhh-dashboard">
+        <div class="page-header">
+          <h1 class="page-title">Panel RR.HH. 🏢</h1>
+          <p class="page-sub">Gestión de solicitudes de empleados — Coordinadora</p>
+        </div>
+        <div class="stats-grid" id="rrhh-stats"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;margin-top:2rem;">
+          <h3 style="font-family:'Syne',sans-serif;font-weight:700;font-size:1rem;">Solicitudes Recientes</h3>
+          <button class="btn btn-secondary btn-sm" onclick="goTo('view-rrhh-solicitudes')">Ver todas →</button>
+        </div>
+        <div id="rrhh-recientes"></div>
+      </div>
+
+      <!-- Vista: Todas las solicitudes (panel RR.HH.) -->
+      <div class="view" id="view-rrhh-solicitudes">
+        <div class="page-header">
+          <h1 class="page-title">Todas las Solicitudes</h1>
+          <p class="page-sub">Gestionar y responder solicitudes de empleados</p>
+        </div>
+        <div class="toolbar">
+          <input class="search-input" placeholder="Buscar por empleado o asunto..." id="rrhh-search" oninput="renderRrhhSolicitudes()" />
+          <select class="filter-select" id="rrhh-filter-estado" onchange="renderRrhhSolicitudes()">
+            <option value="">Todos los estados</option>
+            <option value="Pendiente">Pendiente</option>
+            <option value="En Revisión">En Revisión</option>
+            <option value="Aprobada">Aprobada</option>
+            <option value="Rechazada">Rechazada</option>
+          </select>
+          <select class="filter-select" id="rrhh-filter-tipo" onchange="renderRrhhSolicitudes()">
+            <option value="">Todos los tipos</option>
+            <option value="Vacaciones">Vacaciones</option>
+            <option value="Permiso">Permiso</option>
+            <option value="Certificado">Certificado</option>
+            <option value="Incapacidad">Incapacidad</option>
+            <option value="Otro">Otro</option>
+          </select>
+        </div>
+        <div id="rrhh-solicitudes-list"></div>
+      </div>
+
+      <!-- Vista: Buzón de notificaciones RR.HH. -->
+      <div class="view" id="view-rrhh-notificaciones">
+        <div class="page-header">
+          <h1 class="page-title">Buzón RR.HH.</h1>
+          <p class="page-sub">Notificaciones de nuevas solicitudes recibidas</p>
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-bottom:1rem;">
+          <button class="btn btn-secondary btn-sm" onclick="marcarTodasLeidas()">✓ Marcar todas como leídas</button>
+        </div>
+        <div id="rrhh-notificaciones" style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;"></div>
+      </div>
+
+
+    </main>
+  </div>
+</div>
+
+
+<!-- ============================================================
+  HTML 5 — MODAL DE DETALLE / GESTIÓN DE SOLICITUD
+============================================================ -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <h3 id="modal-title">Detalle de Solicitud</h3>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-footer" id="modal-footer"></div>
+  </div>
+</div>
+
+<!-- Toast de confirmación -->
+<div id="toast">
+  <span class="toast-icon" id="toast-icon">✓</span>
+  <span class="toast-msg"  id="toast-msg"></span>
+</div>
+
+
+<!-- ============================================================
+  JAVASCRIPT
+============================================================ -->
+<script>
+
+/* ============================================================
+  JS SECCIÓN 1 — USUARIOS DEL SISTEMA
+  Edita los nombres, áreas y tipos aquí.
+  type: 'empleado' o 'rrhh'
+  Para agregar un usuario: copia una entrada y agrega la tarjeta en HTML 1
+============================================================ */
+const USERS = {
+  empleado1: { name: 'Carlos Rivera', role: 'Empleado', area: 'Logística',        icon: '👤', type: 'empleado' },
+  empleado2: { name: 'Ana Gómez',     role: 'Empleado', area: 'Comercial',         icon: '👤', type: 'empleado' },
+  empleado3: { name: 'Luis Torres',   role: 'Empleado', area: 'Operaciones',       icon: '👤', type: 'empleado' },
+  rrhh:      { name: 'RR.HH. Admin',  role: 'Encargado RR.HH.', area: 'Recursos Humanos', icon: '🏢', type: 'rrhh' },
+};
+
+
+/* ============================================================
+  JS SECCIÓN 2 — TIPOS DE SOLICITUD
+  Edita o agrega tipos aquí. También actualiza las <option> en HTML 3
+============================================================ */
+const TIPO_ICONS = {
+  Vacaciones:  '🌴',
+  Permiso:     '📅',
+  Certificado: '📄',
+  Incapacidad: '🏥',
+  Otro:        '📝',
+};
+const TIPO_CLASS = {
+  Vacaciones:  'icon-vacaciones',
+  Permiso:     'icon-permiso',
+  Certificado: 'icon-certificado',
+  Incapacidad: 'icon-incapacidad',
+  Otro:        'icon-otro',
+};
+
+
+/* ============================================================
+  JS SECCIÓN 3 — CONTRASEÑA
+  Cambia '1234' por la contraseña que quieras.
+  Recuerda actualizar el texto en HTML 1 también.
+============================================================ */
+const PASSWORD = '1234';
+
+
+/* ============================================================
+  JS SECCIÓN 4 — ALMACENAMIENTO LOCAL (localStorage)
+  Funciones para leer y guardar datos en el navegador.
+  No necesita cambios a menos que quieras cambiar los nombres de clave.
+============================================================ */
+function loadData()       { return JSON.parse(localStorage.getItem('coord_solicitudes') || '[]'); }
+function saveData(data)   { localStorage.setItem('coord_solicitudes', JSON.stringify(data)); }
+function loadNotifs()     { return JSON.parse(localStorage.getItem('coord_notifs') || '[]'); }
+function saveNotifs(n)    { localStorage.setItem('coord_notifs', JSON.stringify(n)); }
+function getNextId() {
+  const data = loadData();
+  return data.length ? Math.max(...data.map(s => s.id)) + 1 : 1;
+}
+
+let currentUser    = null;
+let selectedUserKey = 'empleado1';
+
+
+/* ============================================================
+  JS SECCIÓN 5 — DATOS DE EJEMPLO (seed)
+  Se cargan solo la primera vez (cuando localStorage está vacío).
+  Puedes editar o eliminar estos registros de muestra.
+============================================================ */
+function seedData() {
+  if (loadData().length > 0) return;
+
+  const samples = [
+    {
+      id:1, userId:'empleado1', userName:'Carlos Rivera', userArea:'Logística',
+      tipo:'Vacaciones', prioridad:'media',
+      asunto:'Vacaciones julio 2026',
+      desc:'Solicito 10 días hábiles de vacaciones del 7 al 18 de julio.',
+      estado:'Aprobada', fecha:'2026-05-15',
+      fechaInicio:'2026-07-07', fechaFin:'2026-07-18',
+      respuesta:'Vacaciones aprobadas. Se confirma el período solicitado.',
+      fechaRespuesta:'2026-05-17'
+    },
+    {
+      id:2, userId:'empleado1', userName:'Carlos Rivera', userArea:'Logística',
+      tipo:'Certificado', prioridad:'baja',
+      asunto:'Certificado laboral para banco',
+      desc:'Requiero certificado laboral para trámite bancario.',
+      estado:'En Revisión', fecha:'2026-05-28',
+      fechaInicio:'', fechaFin:'', respuesta:'', fechaRespuesta:''
+    },
+    {
+      id:3, userId:'empleado2', userName:'Ana Gómez', userArea:'Comercial',
+      tipo:'Permiso', prioridad:'alta',
+      asunto:'Permiso médico urgente',
+      desc:'Solicito permiso de medio día para cita médica urgente el 3 de junio.',
+      estado:'Pendiente', fecha:'2026-06-01',
+      fechaInicio:'2026-06-03', fechaFin:'2026-06-03', respuesta:'', fechaRespuesta:''
+    },
+    {
+      id:4, userId:'empleado3', userName:'Luis Torres', userArea:'Operaciones',
+      tipo:'Incapacidad', prioridad:'alta',
+      asunto:'Incapacidad médica 5 días',
+      desc:'Adjunto incapacidad médica por enfermedad respiratoria.',
+      estado:'Aprobada', fecha:'2026-05-27',
+      fechaInicio:'2026-05-28', fechaFin:'2026-05-31',
+      respuesta:'Incapacidad registrada y aprobada en sistema.',
+      fechaRespuesta:'2026-05-27'
+    },
+    {
+      id:5, userId:'empleado2', userName:'Ana Gómez', userArea:'Comercial',
+      tipo:'Vacaciones', prioridad:'media',
+      asunto:'Vacaciones agosto',
+      desc:'Solicito 15 días hábiles de vacaciones durante agosto.',
+      estado:'Rechazada', fecha:'2026-05-20',
+      fechaInicio:'2026-08-01', fechaFin:'2026-08-21',
+      respuesta:'No es posible aprobar este período por cierre de proyectos.',
+      fechaRespuesta:'2026-05-22'
+    },
+  ];
+  saveData(samples);
+
+  const notifs = [
+    { id:1, userId:'empleado1', title:'Solicitud Aprobada ✅',        body:'Tu solicitud de Vacaciones julio 2026 fue aprobada.',          time:'2026-05-17', read:true,  solId:1 },
+    { id:2, userId:'empleado1', title:'Solicitud En Revisión 🔍',      body:'Tu solicitud de Certificado laboral está siendo revisada.',     time:'2026-05-29', read:false, solId:2 },
+    { id:3, userId:'rrhh',      title:'Nueva Solicitud Recibida 📥',   body:'Ana Gómez envió un Permiso médico urgente.',                   time:'2026-06-01', read:false, solId:3 },
+    { id:4, userId:'rrhh',      title:'Nueva Solicitud Recibida 📥',   body:'Carlos Rivera envió un Certificado laboral.',                  time:'2026-05-28', read:true,  solId:2 },
+    { id:5, userId:'empleado2', title:'Solicitud Rechazada ❌',        body:'Tu solicitud de Vacaciones agosto no pudo ser aprobada.',      time:'2026-05-22', read:false, solId:5 },
+    { id:6, userId:'empleado3', title:'Solicitud Aprobada ✅',        body:'Tu incapacidad médica fue registrada y aprobada.',             time:'2026-05-27', read:true,  solId:4 },
+  ];
+  saveNotifs(notifs);
+}
+
+
+/* ============================================================
+  JS SECCIÓN 6 — LOGIN Y LOGOUT
+============================================================ */
+function selectUser(el) {
+  document.querySelectorAll('.user-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedUserKey = el.dataset.user;
+}
+
+function doLogin() {
+  const pass = document.getElementById('login-pass').value;
+  const err  = document.getElementById('login-error');
+  if (pass !== PASSWORD) { err.classList.add('show'); return; }
+  err.classList.remove('show');
+  currentUser = selectedUserKey;
+  initApp();
+}
+
+function doLogout() {
+  currentUser = null;
+  document.getElementById('screen-app').classList.remove('active');
+  document.getElementById('screen-login').classList.add('active');
+  document.getElementById('login-pass').value = '';
+  document.querySelectorAll('.user-card').forEach(c => c.classList.remove('selected'));
+  document.querySelector('.user-card').classList.add('selected');
+  selectedUserKey = 'empleado1';
+}
+
+
+/* ============================================================
+  JS SECCIÓN 7 — INICIALIZACIÓN DE LA APP Y NAVEGACIÓN
+============================================================ */
+function initApp() {
+  const user = USERS[currentUser];
+  document.getElementById('screen-login').classList.remove('active');
+  document.getElementById('screen-app').classList.add('active');
+  document.getElementById('sb-avatar').textContent = user.icon;
+  document.getElementById('sb-name').textContent   = user.name;
+  document.getElementById('sb-role').textContent   = user.area;
+  buildNav();
+  goTo(user.type === 'empleado' ? 'view-inicio' : 'view-rrhh-dashboard');
+  updateBadges();
+}
+
+function buildNav() {
+  const user = USERS[currentUser];
+  const nav  = document.getElementById('sidebar-nav');
+  // Menú empleado
+  if (user.type === 'empleado') {
+    nav.innerHTML = `
+      <div class="nav-section-label">Empleado</div>
+      <button class="nav-item" onclick="goTo('view-inicio',this)"            data-view="view-inicio"><span class="nav-icon">🏠</span> Inicio</button>
+      <button class="nav-item" onclick="goTo('view-nueva',this)"             data-view="view-nueva"><span class="nav-icon">📤</span> Nueva Solicitud</button>
+      <button class="nav-item" onclick="goTo('view-mis-solicitudes',this)"   data-view="view-mis-solicitudes"><span class="nav-icon">📋</span> Mis Solicitudes</button>
+      <button class="nav-item" onclick="goTo('view-notificaciones-emp',this)" data-view="view-notificaciones-emp">
+        <span class="nav-icon">🔔</span> Notificaciones
+        <span class="nav-badge" id="notif-badge" style="display:none">0</span>
+      </button>`;
+  // Menú RR.HH.
+  } else {
+    nav.innerHTML = `
+      <div class="nav-section-label">Recursos Humanos</div>
+      <button class="nav-item" onclick="goTo('view-rrhh-dashboard',this)"       data-view="view-rrhh-dashboard"><span class="nav-icon">📊</span> Dashboard</button>
+      <button class="nav-item" onclick="goTo('view-rrhh-solicitudes',this)"     data-view="view-rrhh-solicitudes">
+        <span class="nav-icon">📋</span> Solicitudes
+        <span class="nav-badge" id="notif-badge" style="display:none">0</span>
+      </button>
+      <button class="nav-item" onclick="goTo('view-rrhh-notificaciones',this)"  data-view="view-rrhh-notificaciones">
+        <span class="nav-icon">📥</span> Buzón
+        <span class="nav-badge" id="notif-badge-rrhh" style="display:none">0</span>
+      </button>`;
+  }
+}
+
+function goTo(viewId, btn) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById(viewId).classList.add('active');
+  if (btn) btn.classList.add('active');
+  else { const b = document.querySelector(`[data-view="${viewId}"]`); if (b) b.classList.add('active'); }
+  // Llama la función de render correspondiente
+  const renders = {
+    'view-inicio':               renderEmpInicio,
+    'view-mis-solicitudes':      renderMisSolicitudes,
+    'view-notificaciones-emp':   renderNotificacionesEmp,
+    'view-rrhh-dashboard':       renderRrhhDashboard,
+    'view-rrhh-solicitudes':     renderRrhhSolicitudes,
+    'view-rrhh-notificaciones':  renderRrhhNotificaciones,
+  };
+  if (renders[viewId]) renders[viewId]();
+  document.getElementById('sidebar').classList.remove('open');
+}
+
+function updateBadges() {
+  const notifs = loadNotifs();
+  const user   = USERS[currentUser];
+  const unread = notifs.filter(n => n.userId === currentUser && !n.read).length;
+  const b  = document.getElementById('notif-badge');
+  const b2 = document.getElementById('notif-badge-rrhh');
+  const mb = document.getElementById('mobile-notif-badge');
+  if (b)  { b.textContent  = unread; b.style.display  = unread > 0 ? 'inline' : 'none'; }
+  if (b2) { b2.textContent = unread; b2.style.display = unread > 0 ? 'inline' : 'none'; }
+  if (mb) { mb.textContent = unread; mb.style.display = unread > 0 ? 'inline' : 'none'; }
+  if (user && user.type === 'rrhh') {
+    const pending = loadData().filter(s => s.estado === 'Pendiente').length;
+    if (b) { b.textContent = pending; b.style.display = pending > 0 ? 'inline' : 'none'; }
+  }
+}
+
+
+/* ============================================================
+  JS SECCIÓN 8 — FUNCIONES DE RENDERIZADO (pintar pantallas)
+============================================================ */
+
+// Inicio del empleado
+function renderEmpInicio() {
+  const user = USERS[currentUser];
+  document.getElementById('welcome-title').textContent = `Hola, ${user.name.split(' ')[0]} 👋`;
+  const sols     = loadData().filter(s => s.userId === currentUser);
+  const pending  = sols.filter(s => s.estado === 'Pendiente').length;
+  const revision = sols.filter(s => s.estado === 'En Revisión').length;
+  const aprobadas= sols.filter(s => s.estado === 'Aprobada').length;
+  document.getElementById('emp-stats').innerHTML = `
+    <div class="stat-card"><div class="stat-label">Total Solicitudes</div><div class="stat-value">${sols.length}</div><div class="stat-delta">Enviadas</div></div>
+    <div class="stat-card"><div class="stat-label">Pendientes</div><div class="stat-value yellow">${pending}</div><div class="stat-delta">En espera</div></div>
+    <div class="stat-card"><div class="stat-label">En Revisión</div><div class="stat-value" style="color:#7ec8e3">${revision}</div><div class="stat-delta">En proceso</div></div>
+    <div class="stat-card"><div class="stat-label">Aprobadas</div><div class="stat-value green">${aprobadas}</div><div class="stat-delta">Resueltas</div></div>`;
+  const recent = sols.slice(-3).reverse();
+  document.getElementById('emp-recientes').innerHTML = recent.length
+    ? `<div class="solicitudes-list">${recent.map(s => solCard(s, false)).join('')}</div>`
+    : emptyState('📋', 'Aún no tienes solicitudes. ¡Envía tu primera!');
+}
+
+// Mis solicitudes (con filtro y búsqueda)
+function renderMisSolicitudes() {
+  const search = (document.getElementById('emp-search')?.value || '').toLowerCase();
+  const filter = document.getElementById('emp-filter')?.value || '';
+  let sols = loadData().filter(s => s.userId === currentUser);
+  if (search) sols = sols.filter(s => s.asunto.toLowerCase().includes(search) || s.tipo.toLowerCase().includes(search));
+  if (filter) sols = sols.filter(s => s.estado === filter);
+  document.getElementById('emp-solicitudes-list').innerHTML = sols.length
+    ? `<div class="solicitudes-list">${sols.slice().reverse().map(s => solCard(s, false)).join('')}</div>`
+    : emptyState('🔍', 'No se encontraron solicitudes con esos filtros.');
+}
+
+// Notificaciones del empleado
+function renderNotificacionesEmp() {
+  const notifs = loadNotifs().filter(n => n.userId === currentUser).slice().reverse();
+  document.getElementById('emp-notificaciones').innerHTML = notifs.length
+    ? notifs.map(n => notifItem(n)).join('')
+    : `<div class="empty-state"><div class="es-icon">🔔</div><p>Sin notificaciones por ahora</p></div>`;
+  updateBadges();
+}
+
+// Dashboard RR.HH.
+function renderRrhhDashboard() {
+  const sols = loadData();
+  document.getElementById('rrhh-stats').innerHTML = `
+    <div class="stat-card"><div class="stat-label">Total</div><div class="stat-value">${sols.length}</div><div class="stat-delta">Todas las solicitudes</div></div>
+    <div class="stat-card"><div class="stat-label">Pendientes</div><div class="stat-value yellow">${sols.filter(s=>s.estado==='Pendiente').length}</div><div class="stat-delta">Requieren atención</div></div>
+    <div class="stat-card"><div class="stat-label">En Revisión</div><div class="stat-value" style="color:#7ec8e3">${sols.filter(s=>s.estado==='En Revisión').length}</div><div class="stat-delta">En proceso</div></div>
+    <div class="stat-card"><div class="stat-label">Aprobadas</div><div class="stat-value green">${sols.filter(s=>s.estado==='Aprobada').length}</div><div class="stat-delta">Resueltas</div></div>
+    <div class="stat-card"><div class="stat-label">Rechazadas</div><div class="stat-value red">${sols.filter(s=>s.estado==='Rechazada').length}</div><div class="stat-delta">No aprobadas</div></div>`;
+  const recent = sols.slice().reverse().slice(0, 4);
+  document.getElementById('rrhh-recientes').innerHTML = recent.length
+    ? `<div class="solicitudes-list">${recent.map(s => solCard(s, true)).join('')}</div>`
+    : emptyState('📋', 'No hay solicitudes registradas aún.');
+}
+
+// Todas las solicitudes RR.HH. (con filtros)
+function renderRrhhSolicitudes() {
+  const search      = (document.getElementById('rrhh-search')?.value || '').toLowerCase();
+  const filterEstado= document.getElementById('rrhh-filter-estado')?.value || '';
+  const filterTipo  = document.getElementById('rrhh-filter-tipo')?.value   || '';
+  let sols = loadData().slice().reverse();
+  if (search)       sols = sols.filter(s => s.asunto.toLowerCase().includes(search) || s.userName.toLowerCase().includes(search));
+  if (filterEstado) sols = sols.filter(s => s.estado === filterEstado);
+  if (filterTipo)   sols = sols.filter(s => s.tipo   === filterTipo);
+  document.getElementById('rrhh-solicitudes-list').innerHTML = sols.length
+    ? `<div class="solicitudes-list">${sols.map(s => solCard(s, true)).join('')}</div>`
+    : emptyState('🔍', 'No se encontraron solicitudes con esos filtros.');
+  updateBadges();
+}
+
+// Buzón RR.HH.
+function renderRrhhNotificaciones() {
+  const notifs = loadNotifs().filter(n => n.userId === 'rrhh').slice().reverse();
+  document.getElementById('rrhh-notificaciones').innerHTML = notifs.length
+    ? notifs.map(n => notifItem(n)).join('')
+    : `<div class="empty-state"><div class="es-icon">📥</div><p>Buzón vacío</p></div>`;
+  updateBadges();
+}
+
+
+/* ============================================================
+  JS SECCIÓN 9 — COMPONENTES HTML (tarjetas y notificaciones)
+============================================================ */
+
+// Tarjeta de solicitud individual
+function solCard(s, isRrhh) {
+  const icon        = TIPO_ICONS[s.tipo]  || '📝';
+  const iconClass   = TIPO_CLASS[s.tipo]  || 'icon-otro';
+  const statusClass = { 'Pendiente':'badge-pendiente','En Revisión':'badge-revision','Aprobada':'badge-aprobada','Rechazada':'badge-rechazada' }[s.estado] || '';
+  return `
+    <div class="sol-card priority-${s.prioridad}" onclick="openModal(${s.id},${isRrhh})">
+      <div class="sol-type-icon ${iconClass}">${icon}</div>
+      <div class="sol-body">
+        <div class="sol-title">${s.asunto}</div>
+        <div class="sol-meta">
+          ${isRrhh ? `<span>👤 ${s.userName}</span><span>🏢 ${s.userArea}</span>` : ''}
+          <span>📅 ${s.fecha}</span><span>📌 ${s.tipo}</span>
+          <span>⚡ ${s.prioridad.charAt(0).toUpperCase()+s.prioridad.slice(1)}</span>
+        </div>
+        <div class="sol-desc">${s.desc}</div>
+      </div>
+      <div class="sol-actions"><span class="badge ${statusClass}">${s.estado}</span></div>
+    </div>`;
+}
+
+// Ítem de notificación
+function notifItem(n) {
+  return `<div class="notif-item ${n.read ? '' : 'unread'}" onclick="readNotif(${n.id})">
+    <div class="notif-dot ${n.read ? 'read' : ''}"></div>
+    <div>
+      <div class="notif-title">${n.title}</div>
+      <div class="notif-body">${n.body}</div>
+      <div class="notif-time">${n.time}</div>
+    </div>
+  </div>`;
+}
+
+// Estado vacío
+function emptyState(icon, msg) {
+  return `<div class="empty-state"><div class="es-icon">${icon}</div><p>${msg}</p></div>`;
+}
+
+
+/* ============================================================
+  JS SECCIÓN 10 — MODAL (detalle y gestión de solicitud)
+============================================================ */
+function openModal(id, isRrhh) {
+  const sol = loadData().find(s => s.id === id);
+  if (!sol) return;
+  const icon        = TIPO_ICONS[sol.tipo] || '📝';
+  const statusClass = { 'Pendiente':'badge-pendiente','En Revisión':'badge-revision','Aprobada':'badge-aprobada','Rechazada':'badge-rechazada' }[sol.estado] || '';
+  document.getElementById('modal-title').textContent = `${icon} ${sol.asunto}`;
+
+  let body = `
+    <div class="detail-row"><span class="detail-label">Estado</span><span class="detail-value"><span class="badge ${statusClass}">${sol.estado}</span></span></div>
+    <div class="detail-row"><span class="detail-label">Empleado</span><span class="detail-value">${sol.userName} — ${sol.userArea}</span></div>
+    <div class="detail-row"><span class="detail-label">Tipo</span><span class="detail-value">${sol.tipo}</span></div>
+    <div class="detail-row"><span class="detail-label">Prioridad</span><span class="detail-value">${sol.prioridad.charAt(0).toUpperCase()+sol.prioridad.slice(1)}</span></div>
+    <div class="detail-row"><span class="detail-label">Fecha envío</span><span class="detail-value">${sol.fecha}</span></div>`;
+  if (sol.fechaInicio) body += `<div class="detail-row"><span class="detail-label">Período</span><span class="detail-value">${sol.fechaInicio} → ${sol.fechaFin||'N/A'}</span></div>`;
+  body += `<div class="detail-desc"><span class="detail-label">Descripción</span><p>${sol.desc}</p></div>`;
+  if (sol.respuesta)
+    body += `<div class="respuesta-box"><div class="r-label">Respuesta de RR.HH. · ${sol.fechaRespuesta}</div><p>${sol.respuesta}</p></div>`;
+  if (isRrhh && sol.estado !== 'Aprobada' && sol.estado !== 'Rechazada')
+    body += `<div class="responder-section"><h4>Gestionar Solicitud</h4>
+      <div class="form-group"><label>Respuesta / Observación</label>
+        <textarea id="resp-text" placeholder="Escribe la respuesta para el empleado...">${sol.respuesta||''}</textarea>
+      </div></div>`;
+
+  document.getElementById('modal-body').innerHTML = body;
+
+  let footer = `<button class="btn btn-secondary" onclick="closeModal()">Cerrar</button>`;
+  if (isRrhh && sol.estado !== 'Aprobada' && sol.estado !== 'Rechazada') {
+    if (sol.estado === 'Pendiente')
+      footer += `<button class="btn btn-warn btn-sm" onclick="cambiarEstado(${id},'En Revisión')">🔍 Poner en Revisión</button>`;
+    footer += `
+      <button class="btn btn-danger btn-sm" onclick="responderSolicitud(${id},'Rechazada')">✕ Rechazar</button>
+      <button class="btn btn-primary btn-sm" onclick="responderSolicitud(${id},'Aprobada')">✓ Aprobar</button>`;
+  }
+  document.getElementById('modal-footer').innerHTML = footer;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function closeModal(e) {
+  if (e && e.target !== document.getElementById('modal-overlay')) return;
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+
+
+/* ============================================================
+  JS SECCIÓN 11 — ACCIONES PRINCIPALES
+  enviar solicitud, aprobar, rechazar, notificaciones
+============================================================ */
+
+// Enviar nueva solicitud
+function enviarSolicitud() {
+  const tipo       = document.getElementById('sol-tipo').value;
+  const asunto     = document.getElementById('sol-asunto').value.trim();
+  const desc       = document.getElementById('sol-desc').value.trim();
+  const prioridad  = document.getElementById('sol-prioridad').value;
+  const fechaInicio= document.getElementById('sol-fecha-inicio').value;
+  const fechaFin   = document.getElementById('sol-fecha-fin').value;
+  const errEl      = document.getElementById('form-error');
+  if (!tipo || !asunto || !desc) {
+    errEl.textContent = 'Por favor completa los campos obligatorios (*).';
+    errEl.classList.add('show'); return;
+  }
+  errEl.classList.remove('show');
+  const user  = USERS[currentUser];
+  const today = new Date().toISOString().split('T')[0];
+  const newSol = { id:getNextId(), userId:currentUser, userName:user.name, userArea:user.area, tipo, prioridad, asunto, desc, estado:'Pendiente', fecha:today, fechaInicio:fechaInicio||'', fechaFin:fechaFin||'', respuesta:'', fechaRespuesta:'' };
+  const data  = loadData(); data.push(newSol); saveData(data);
+  const notifs= loadNotifs();
+  const nid   = notifs.length ? Math.max(...notifs.map(n=>n.id))+1 : 1;
+  notifs.push({ id:nid,   userId:currentUser, title:'Solicitud Enviada ✅',       body:`Tu solicitud "${asunto}" fue enviada. En espera de revisión.`, time:today, read:false, solId:newSol.id });
+  notifs.push({ id:nid+1, userId:'rrhh',      title:'Nueva Solicitud Recibida 📥', body:`${user.name} envió: ${asunto} (${tipo})`,                      time:today, read:false, solId:newSol.id });
+  saveNotifs(notifs);
+  ['sol-tipo','sol-asunto','sol-desc','sol-fecha-inicio','sol-fecha-fin'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('sol-prioridad').value = 'media';
+  showToast('✅', 'Solicitud enviada. RR.HH. ha sido notificado.');
+  updateBadges();
+  goTo('view-mis-solicitudes');
+}
+
+// Cambiar estado de solicitud (RR.HH.)
+function cambiarEstado(id, estado) {
+  const data = loadData(); const idx = data.findIndex(s=>s.id===id); if(idx<0) return;
+  data[idx].estado = estado; saveData(data);
+  closeModal(); showToast('🔍', `Solicitud movida a "${estado}"`);
+  renderRrhhSolicitudes(); updateBadges();
+}
+
+// Aprobar o rechazar solicitud (RR.HH.)
+function responderSolicitud(id, estado) {
+  const text = document.getElementById('resp-text')?.value.trim() || '';
+  const data = loadData(); const idx = data.findIndex(s=>s.id===id); if(idx<0) return;
+  data[idx].estado         = estado;
+  data[idx].respuesta      = text || (estado==='Aprobada' ? 'Solicitud aprobada.' : 'Solicitud no aprobada.');
+  data[idx].fechaRespuesta = new Date().toISOString().split('T')[0];
+  saveData(data);
+  const notifs = loadNotifs(); const nid = notifs.length ? Math.max(...notifs.map(n=>n.id))+1 : 1;
+  notifs.push({ id:nid, userId:data[idx].userId, title:`Solicitud ${estado} ${estado==='Aprobada'?'✅':'❌'}`, body:`Tu solicitud "${data[idx].asunto}" fue ${estado.toLowerCase()}. ${data[idx].respuesta}`, time:data[idx].fechaRespuesta, read:false, solId:id });
+  saveNotifs(notifs);
+  closeModal();
+  showToast(estado==='Aprobada'?'✅':'❌', `Solicitud ${estado.toLowerCase()} y empleado notificado.`);
+  renderRrhhSolicitudes(); updateBadges();
+}
+
+// Marcar notificación como leída
+function readNotif(id) {
+  const notifs = loadNotifs(); const idx = notifs.findIndex(n=>n.id===id);
+  if(idx>=0) { notifs[idx].read=true; saveNotifs(notifs); }
+  updateBadges();
+  if(USERS[currentUser].type==='empleado') renderNotificacionesEmp(); else renderRrhhNotificaciones();
+}
+
+// Marcar todas como leídas
+function marcarTodasLeidas() {
+  const notifs = loadNotifs();
+  notifs.forEach(n => { if(n.userId===currentUser) n.read=true; });
+  saveNotifs(notifs); updateBadges();
+  if(USERS[currentUser].type==='empleado') renderNotificacionesEmp(); else renderRrhhNotificaciones();
+  showToast('✓', 'Todas las notificaciones marcadas como leídas.');
+}
+
+
+/* ============================================================
+  JS SECCIÓN 12 — TOAST Y UTILIDADES
+============================================================ */
+let toastTimer;
+function showToast(icon, msg) {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-icon').textContent = icon;
+  document.getElementById('toast-msg').textContent  = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+function toggleMobileSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+}
+
+document.addEventListener('keydown', e => { if(e.key==='Escape') closeModal(); });
+
+
+/* ============================================================
+  JS SECCIÓN 13 — ARRANQUE DEL SISTEMA
+============================================================ */
+seedData();
+
+</script>
+</body>
+</html>
